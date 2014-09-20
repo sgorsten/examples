@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\font.h" />
+    <ClInclude Include="..\src\linalg.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}</ProjectGuid>
