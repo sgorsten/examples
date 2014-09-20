@@ -50,6 +50,7 @@ void Font::Print(int x, int y, const char * format, ...) const
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
     glBegin(GL_QUADS);
@@ -69,6 +70,6 @@ void Font::Print(int x, int y, const char * format, ...) const
         }
         x += 8;
     }
-    glBindTexture(GL_TEXTURE_2D, 0);
     glEnd();
+    glPopAttrib();
 }
