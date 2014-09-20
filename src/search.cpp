@@ -5,12 +5,16 @@
 
 class Map
 {
-    std::vector<int> tiles;
     int2 dims;
+    std::vector<int> tiles;
+    std::vector<int> closed;
 
-    int GetIndex(const int2 & coord) const { return coord.y * dims.x + coord.x; }
+    static const int2 directions[8];
+    static const int costs[8];
+
+    int GetIndex(const int2 & coord) const { return coord.y * dims.x + coord.x; }    
 public:
-    Map(int2 dims) : tiles(dims.x * dims.y, 0), dims(dims) {}
+    Map(int2 dims) : dims(dims), tiles(dims.x * dims.y, 0) {}
 
     int2 GetDimensions() const { return dims; }
     int GetWidth() const { return dims.x; }
@@ -18,18 +22,20 @@ public:
     bool IsValidCoord(const int2 & coord) const { return coord.x >= 0 && coord.y >= 0 && coord.x < dims.x && coord.y < dims.y; }
     bool IsObstruction(const int2 & coord) const { return tiles[GetIndex(coord)] != 0; }
 
+    bool IsClosed(const int2 & coord) const { return closed[GetIndex(coord)] != -1; }
+    const int2 & GetActionTaken(const int2 & coord) const { return directions[closed[GetIndex(coord)]]; }
+
     void SetObstruction(const int2 & coord, bool isObstruction) { tiles[GetIndex(coord)] = isObstruction ? 1 : 0; }
 
-    std::vector<int2> Search(const int2 & start, const int2 & goal) const
+    std::vector<int2> Search(const int2 & start, const int2 & goal)
     {
-        const int2 directions[] = {{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
-        const int costs[] = {5,7,5,7,5,7,5,7};
-
         struct OpenNode { int2 state; int lastAction, gCost; bool operator < (const OpenNode & r) const { return r.gCost < gCost; } };
         std::vector<OpenNode> open;
-        std::vector<int> closed(tiles.size(), -1);
-
         open.push_back({start, 0, 0});
+
+        closed.clear();
+        closed.resize(tiles.size(), -1);
+
         while(!open.empty())
         {
             auto node = open.front();
@@ -37,7 +43,7 @@ public:
             open.pop_back();
 
             auto state = node.state;
-            if(closed[GetIndex(state)] != -1) continue;
+            if(IsClosed(state)) continue;
 
             closed[GetIndex(state)] = node.lastAction;
             if(state == goal)
@@ -45,8 +51,7 @@ public:
                 std::vector<int2> path(1,state);
                 while(state != start)
                 {    
-                    int action = closed[GetIndex(state)];
-                    state -= directions[action];
+                    state -= GetActionTaken(state);
                     path.push_back(state);
                 }
                 std::reverse(begin(path), end(path));
@@ -67,6 +72,9 @@ public:
         return {};
     }
 };
+
+const int2 Map::directions[8] = {{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
+const int Map::costs[8] = {5,7,5,7,5,7,5,7};
 
 #include <iostream>
 
@@ -141,6 +149,22 @@ int main() try
 
         if(middleClicked)
         {
+            glBegin(GL_LINES);
+            glColor3f(1,1,0);
+            for(int y=0; y<map.GetHeight(); ++y)
+            {
+                for(int x=0; x<map.GetWidth(); ++x)
+                {
+                    if(map.IsClosed({x,y}))
+                    {
+                        int2 state = {x,y}, parent = state - map.GetActionTaken(state);
+                        glVertex2i(state.x * mapPixelScale + mapPixelScale/2, state.y * mapPixelScale + mapPixelScale/2);
+                        glVertex2i(parent.x * mapPixelScale + mapPixelScale/2, parent.y * mapPixelScale + mapPixelScale/2);
+                    }
+                }
+            }
+            glEnd();
+
             if(path.empty()) glColor3f(1,0,0);
             else glColor3f(0,1,0);
 
