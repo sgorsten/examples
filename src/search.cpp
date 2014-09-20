@@ -3,14 +3,20 @@
 #include <vector>
 #include <algorithm>
 
+int EstimateCost(const int2 & a, const int2 & b)
+{
+    auto dx = abs(b.x-a.x), dy = abs(b.y-a.y);
+    return dx > dy ? dx*5 + dy*2 : dx*2 + dy*5;
+}
+
 class Map
 {
     int2 dims;
     std::vector<int> tiles;
 
-    struct OpenNode { int2 state; int lastAction, gCost, fCost; bool operator < (const OpenNode & r) const { return std::tie(r.fCost,-r.gCost) < std::tie(fCost,-gCost); } };
+    struct OpenNode { int2 state, pred; int gCost, fCost; bool operator < (const OpenNode & r) const { return std::tie(r.fCost,-r.gCost) < std::tie(fCost,-gCost); } };
     std::vector<OpenNode> open;
-    std::vector<int> closed;
+    std::vector<int2> closed;
 
     static const int2 directions[8];
     static const int costs[8];
@@ -25,18 +31,18 @@ public:
     bool IsValidCoord(const int2 & coord) const { return coord.x >= 0 && coord.y >= 0 && coord.x < dims.x && coord.y < dims.y; }
     bool IsObstruction(const int2 & coord) const { return tiles[GetIndex(coord)] != 0; }
 
-    bool IsClosed(const int2 & coord) const { return closed[GetIndex(coord)] != -1; }
-    const int2 & GetActionTaken(const int2 & coord) const { return directions[closed[GetIndex(coord)]]; }
+    bool IsClosed(const int2 & coord) const { return closed[GetIndex(coord)].x != -1; }
+    const int2 & GetPredecessor(const int2 & coord) const { return closed[GetIndex(coord)]; }
 
     void SetObstruction(const int2 & coord, bool isObstruction) { tiles[GetIndex(coord)] = isObstruction ? 1 : 0; }
 
     template<class H> std::vector<int2> Search(const int2 & start, const int2 & goal, H heuristic)
     {
         open.clear();
-        open.push_back({start, 0, 0, heuristic(start, goal)});
+        open.push_back({start, start, 0, heuristic(start, goal)});
 
         closed.clear();
-        closed.resize(tiles.size(), -1);
+        closed.resize(tiles.size(), {-1,0});
 
         while(!open.empty())
         {
@@ -47,13 +53,13 @@ public:
             auto state = node.state;
             if(IsClosed(state)) continue;
 
-            closed[GetIndex(state)] = node.lastAction;
+            closed[GetIndex(state)] = node.pred;
             if(state == goal)
             {
                 std::vector<int2> path(1,state);
                 while(state != start)
                 {    
-                    state -= GetActionTaken(state);
+                    state = GetPredecessor(state);
                     path.push_back(state);
                 }
                 std::reverse(begin(path), end(path));
@@ -66,9 +72,9 @@ public:
                 if(!IsValidCoord(newState)) continue;
                 if(IsClosed(newState)) continue;
                 if(IsObstruction(newState)) continue;
-                if(IsObstruction({state.x, newState.y}) && IsObstruction({newState.x, state.y})) continue;
+                if(IsObstruction({state.x, newState.y}) || IsObstruction({newState.x, state.y})) continue;
                 auto gCost = node.gCost + costs[i];
-                open.push_back({newState, i, gCost, gCost + heuristic(newState, goal)});
+                open.push_back({newState, state, gCost, gCost + heuristic(newState, goal)});
                 std::push_heap(begin(open), end(open));
             }
         }
@@ -76,12 +82,146 @@ public:
         return {};
     }
 
+    bool CheckStraight(int2 & state, int & gCost, int action, const int2 & goal)
+    {
+        struct Check { int2 blockOffset, openOffset; };
+        static const Check checks[4][2] = {
+            {{{-1,-1},{0,-1}}, {{-1,+1},{0,+1}}},
+            {{{-1,-1},{-1,0}}, {{+1,-1},{+1,0}}},
+            {{{+1,-1},{0,-1}}, {{+1,+1},{0,+1}}},
+            {{{-1,+1},{-1,0}}, {{+1,+1},{+1,0}}}
+        };
+
+        auto startState = state;
+        state += directions[action];
+        gCost += costs[action];    
+
+        while(true)
+        {
+            if(!IsValidCoord(state)) return false;
+            if(IsClosed(state)) return false;
+            if(IsObstruction(state)) return false;
+
+            if( state.x == goal.x && state.y == goal.y )
+            {
+                return true;
+            }
+
+            for(auto check : checks[action])
+            {
+                if(IsValidCoord(state + check.blockOffset) && IsObstruction(state + check.blockOffset) && IsValidCoord(state + check.openOffset) && !IsObstruction(state + check.openOffset))
+                {
+                    return true;
+                }
+            }
+
+            state += directions[action];
+            gCost += costs[action];
+        }
+    }
+
+    template<class H> std::vector<int2> JumpPointSearch(const int2 & start, const int2 & goal, H heuristic)
+    {
+        open.clear();
+        open.push_back({start, start, 0, heuristic(start, goal)});
+
+        closed.clear();
+        closed.resize(tiles.size(), {-1,0});
+
+        while(!open.empty())
+        {
+            const auto node = open.front();
+            std::pop_heap(begin(open), end(open));
+            open.pop_back();
+
+            if(IsClosed(node.state)) continue;
+
+            closed[GetIndex(node.state)] = node.pred;
+            if(node.state == goal)
+            {
+                auto state = node.state;   
+                std::vector<int2> path(1,state);
+                while(state != start)
+                {    
+                    state = GetPredecessor(state);
+                    path.push_back(state);
+                }
+                std::reverse(begin(path), end(path));
+                return path;
+            }
+
+            int2 checkOffsets[4][2] = {
+                {{-1,-1},{-1,+1}},
+                {{-1,-1},{+1,-1}},
+                {{+1,-1},{+1,+1}},
+                {{-1,+1},{+1,+1}}
+            };
+
+            // Adjacent moves
+            for(int i=0; i<4; ++i)
+            {
+                auto newState = node.state;
+                auto gCost = node.gCost;
+                if(CheckStraight(newState, gCost, i, goal))
+                {
+                    open.push_back({newState, node.state, gCost, gCost + heuristic(newState, goal)});
+                    std::push_heap(begin(open), end(open));
+                }
+            }
+
+            static const int adjDirections[4][2] = {{0,1},{1,2},{2,3},{3,0}};
+
+            // Diagonal moves
+            for(int i=0; i<4; ++i)
+            {
+                int action = i+4;
+                auto prevState = node.state;
+                auto newState = node.state + directions[action];
+                auto gCost = node.gCost + costs[action];
+
+                // || CheckStraight(s1, g, adjDirections[i][0], goal) || CheckStraight(s2, g, adjDirections[i][1], goal) )
+
+                while(true)
+                {
+                    if(!IsValidCoord(newState)) break;
+                    if(IsClosed(newState)) break;
+                    if(IsObstruction(newState)) break;
+                    if(IsObstruction({prevState.x, newState.y}) || IsObstruction({newState.x, prevState.y})) break;
+
+                    if( newState.x == goal.x || newState.y == goal.y ) 
+                    {
+                        open.push_back({newState, node.state, gCost, gCost + heuristic(newState, goal)});
+                        std::push_heap(begin(open), end(open));
+                        break;
+                    }                    
+
+                    auto s1 = newState, s2 = newState; auto g1 = gCost, g2 = gCost;
+                    bool p1 = CheckStraight(s1, g1, adjDirections[i][0], goal);
+                    bool p2 = CheckStraight(s2, g2, adjDirections[i][1], goal);
+                    if(p1 || p2)
+                    {
+                        open.push_back({newState, node.state, gCost, gCost + heuristic(newState, goal)});
+                        std::push_heap(begin(open), end(open));
+                        break;
+                    }                    
+
+                    prevState = newState;
+                    newState += directions[action];
+                    gCost += costs[action];
+                }
+            }
+        }
+
+        return {};
+    }
+
     std::vector<int2> DijkstraSearch(const int2 & start, const int2 & goal) { return Search(start, goal, [](const int2 & a, const int2 & b) { return 0; }); }
-    std::vector<int2> AStarSearch(const int2 & start, const int2 & goal) { return Search(start, goal, [](const int2 & a, const int2 & b) { auto dx = abs(b.x-a.x), dy = abs(b.y-a.y); return 7 * std::min(dx,dy) + 5 * (std::max(dx,dy) - std::min(dx,dy)); }); }
+    std::vector<int2> AStarSearch(const int2 & start, const int2 & goal) { return Search(start, goal, [](const int2 & a, const int2 & b) { return EstimateCost(a,b); }); }
+    std::vector<int2> AStarJPSearch(const int2 & start, const int2 & goal) { return JumpPointSearch(start, goal, [](const int2 & a, const int2 & b) { return EstimateCost(a,b); }); }
 };
 
-const int2 Map::directions[8] = {{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
-const int Map::costs[8] = {5,7,5,7,5,7,5,7};
+const int2 Map::directions[8] = {{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
+const int Map::costs[8] = {5,5,5,5,7,7,7,7};
 
 #include <iostream>
 
@@ -100,7 +240,7 @@ int main() try
     int algorithm = 0;
     window.SetKeyHandler([&algorithm](int key, int, int action, int)
     {
-        if(key == GLFW_KEY_A && action == GLFW_PRESS) algorithm = (algorithm + 1) % 2;
+        if(key == GLFW_KEY_A && action == GLFW_PRESS) algorithm = (algorithm + 1) % 3;
     });
 
     Map map({40, 30});
@@ -138,6 +278,7 @@ int main() try
             {
             case 0: path = map.AStarSearch(startTile, tile); break;
             case 1: path = map.DijkstraSearch(startTile, tile); break;
+            case 2: path = map.AStarJPSearch(startTile, tile); break;
             }
         }
 
@@ -150,7 +291,17 @@ int main() try
         glColor3f(1,1,0);
         window.Print({32,32}, "Left-click to add obstruction, right-click to clear obstruction.");
         window.Print({32,48}, "Middle-click and drag to find a path between two points.");
-        window.Print({32,64}, "Press 'A' to change search algorithm (currently %s)", algorithm ? "Dijkstra search" : "A* search");
+        const char * labels[] = {"A* search", "Dijkstra search", "A* Jump Point Search"};
+        window.Print({32,64}, "Press 'A' to change search algorithm (currently %s)", labels[algorithm]);
+        if(!path.empty())
+        {
+            int cost = 0;
+            for(size_t i=1; i<path.size(); ++i)
+            {
+                cost += EstimateCost(path[i-1], path[i]);
+            }
+            window.Print({32,80}, "A path was found using %d moves with a cost of %d", path.size(), cost);
+        }
 
         glPushMatrix();
         glTranslated(mapOffset.x, mapOffset.y, 0);
@@ -178,7 +329,7 @@ int main() try
                 {
                     if(map.IsClosed({x,y}))
                     {
-                        int2 state = {x,y}, parent = state - map.GetActionTaken(state);
+                        int2 state = {x,y}, parent = map.GetPredecessor(state);
                         glVertex2i(state.x * mapPixelScale + mapPixelScale/2, state.y * mapPixelScale + mapPixelScale/2);
                         glVertex2i(parent.x * mapPixelScale + mapPixelScale/2, parent.y * mapPixelScale + mapPixelScale/2);
                     }
@@ -186,14 +337,28 @@ int main() try
             }
             glEnd();
 
+            glBegin(GL_LINE_STRIP);
             if(path.empty()) glColor3f(1,0,0);
             else glColor3f(0,1,0);
-
-            glBegin(GL_LINE_STRIP);
             for(auto tile : path) glVertex2i(tile.x * mapPixelScale + mapPixelScale/2, tile.y * mapPixelScale + mapPixelScale/2);
             glEnd();
 
             glBegin(GL_QUADS);
+            glColor3f(0,0.5f,1);
+            for(int y=0; y<map.GetHeight(); ++y)
+            {
+                for(int x=0; x<map.GetWidth(); ++x)
+                {
+                    int2 tile = {x,y};
+                    if(map.IsClosed(tile))
+                    {
+                        DrawRect(tile*mapPixelScale + (mapPixelScale/2 - 2), tile*mapPixelScale + (mapPixelScale/2 + 2));
+                    }
+                }
+            }
+
+            if(path.empty()) glColor3f(1,0,0);
+            else glColor3f(0,1,0);
             DrawRect(startTile*mapPixelScale + (mapPixelScale/2 - 2), startTile*mapPixelScale + (mapPixelScale/2 + 2));
             DrawRect(tile*mapPixelScale + (mapPixelScale/2 - 2), tile*mapPixelScale + (mapPixelScale/2 + 2));
             glEnd();
