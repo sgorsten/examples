@@ -1,40 +1,29 @@
-#include "font.h"
-
-#include <GLFW/glfw3.h>
-#pragma comment(lib, "glfw3.lib")
-#pragma comment(lib, "opengl32.lib")
+#include "window.h"
 
 #include <iostream>
 
 int main() try
 {
-    if(!glfwInit()) throw std::runtime_error("glfwInit() failed.");
-    auto window = glfwCreateWindow(1280, 720, "Development Sandbox", nullptr, nullptr);
-    if(!window) throw std::runtime_error("glfwCreateWindow(...) failed.");
+    Window window({1280,720}, "Development Sandbox");
 
-    glfwMakeContextCurrent(window);
-    
-    Font font;
-
-    while(!glfwWindowShouldClose(window))
+    while(!window.WindowShouldClose())
     {
         glfwPollEvents();
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
-        glViewport(0, 0, width, height);
+        window.MakeContextCurrent();
+
+        auto size = window.GetFramebufferSize();
+        glViewport(0, 0, size.x, size.y);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glPushMatrix();
-        glOrtho(0, width, height, 0, -1, +1);
-        font.Print(32, 32, "This is a test of basic font rendering, using an %d x %d monospaced font.", 8, 14);
+        glOrtho(0, size.x, size.y, 0, -1, +1);
+        window.Print({32,32}, "This is a test of basic font rendering, using an %d x %d monospaced font.", 8, 14);
         glPopMatrix();
 
-        glfwSwapBuffers(window);
+        window.SwapBuffers();
     }
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
     return 0;
 }
 catch(const std::exception & e)

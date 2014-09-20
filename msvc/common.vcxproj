@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\font.cpp" />
+    <ClCompile Include="..\src\window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\font.h" />
+    <ClInclude Include="..\src\window.h" />
     <ClInclude Include="..\src\linalg.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

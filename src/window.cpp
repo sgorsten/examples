@@ -1,12 +1,21 @@
-#include "font.h"
+#include "window.h"
 
 #include <cstdint>
 #include <cstdarg>
 #include <cstdio>
 #include <cctype>
 
-Font::Font()
+#include <stdexcept>
+
+#pragma comment(lib, "glfw3.lib")
+#pragma comment(lib, "opengl32.lib")
+
+Window::Window(const int2 & dimensions, const char * title)
 {
+    if(glfwInit() == GL_FALSE) throw std::runtime_error("glfwInit() failed.");
+    window = glfwCreateWindow(dimensions.x, dimensions.y, title, nullptr, nullptr);
+    if(window == nullptr) throw std::runtime_error("glfwCreateWindow(...) failed.");
+
     const uint32_t compressedFont[] = {
         0,0x18,0,0,0x660000,0xc000018,0,0,0x36661800,0xc1c003e,0xc30,0x40000000,0x36663c00,0xc360063,0x1818,0x60000000,0x7f243c00,0x6364343,0x1866300c,0x30000000,0x36003c00,0x1c6303,0x183c300c,
         0x18000000,0x36001800,0x6e303e,0x7eff300c,0xc007f00,0x36001800,0x3b1860,0x183c300c,0x6000000,0x7f000000,0x330c61,0x1866300c,0x3000018,0x36001800,0x336663,0x1818,0x1180018,0x36001800,
@@ -32,8 +41,9 @@ Font::Font()
         }
     }
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    MakeContextCurrent();
+    glGenTextures(1, &fontTexture);
+    glBindTexture(GL_TEXTURE_2D, fontTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 128, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, fontPixels);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -42,7 +52,13 @@ Font::Font()
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Font::Print(int x, int y, const char * format, ...) const
+Window::~Window()
+{
+    if(fontTexture) glDeleteTextures(1, &fontTexture);
+    if(window) glfwDestroyWindow(window);
+}
+
+void Window::Print(const int2 & coord, const char * format, ...)
 {
     char buffer[1024];
     va_list args;
@@ -52,23 +68,24 @@ void Font::Print(int x, int y, const char * format, ...) const
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, fontTexture);
     glBegin(GL_QUADS);
-    const int xSize = 8, ySize = 14;
-    const float sScale = 8.0f/128, tScale = 14.0f/128;
+    int2 glyphSize = {8,14};
+    float2 texScale = float2(glyphSize)/128.0f;
+    auto c0 = coord;
     for(auto ch : buffer)
     {
         if(!ch) break;
         if(isprint(ch))
         {
-            float s0 = (ch-32)%16 * sScale, s1 = s0+sScale;
-            float t0 = (ch-32)/16 * tScale, t1 = t0+tScale;
-            glTexCoord2f(s0,t0); glVertex2i(x,y);
-            glTexCoord2f(s1,t0); glVertex2i(x+8,y);
-            glTexCoord2f(s1,t1); glVertex2i(x+8,y+14);
-            glTexCoord2f(s0,t1); glVertex2i(x,y+14);  
+            auto t0 = float2(int2((ch-32)%16, (ch-32)/16)) * texScale, t1 = t0 + texScale;
+            auto c1 = c0 + int2{8,14};
+            glTexCoord2f(t0.x,t0.y); glVertex2i(c0.x,c0.y);
+            glTexCoord2f(t1.x,t0.y); glVertex2i(c1.x,c0.y);
+            glTexCoord2f(t1.x,t1.y); glVertex2i(c1.x,c1.y);
+            glTexCoord2f(t0.x,t1.y); glVertex2i(c0.x,c1.y);
         }
-        x += 8;
+        c0.x += 8;
     }
     glEnd();
     glPopAttrib();

@@ -1,9 +1,4 @@
-#include "font.h"
-#include "linalg.h"
-
-#include <GLFW/glfw3.h>
-#pragma comment(lib, "glfw3.lib")
-#pragma comment(lib, "opengl32.lib")
+#include "window.h"
 
 #include <vector>
 #include <algorithm>
@@ -42,16 +37,15 @@ public:
             open.pop_back();
 
             auto state = node.state;
-            if(closed[state.y * dims.x + state.x] != -1) continue;
+            if(closed[GetIndex(state)] != -1) continue;
 
-            closed[state.y * dims.x + state.x] = node.lastAction;
+            closed[GetIndex(state)] = node.lastAction;
             if(state == goal)
             {
                 std::vector<int2> path(1,state);
                 while(state != start)
-                {
-                    
-                    int action = closed[state.y * dims.x + state.x];
+                {    
+                    int action = closed[GetIndex(state)];
                     state -= directions[action];
                     path.push_back(state);
                 }
@@ -86,56 +80,48 @@ void DrawRect(int2 a, int2 b)
 
 int main() try
 {
-    if(!glfwInit()) throw std::runtime_error("glfwInit() failed.");
-    auto window = glfwCreateWindow(1280, 720, "Map Search Example", nullptr, nullptr);
-    if(!window) throw std::runtime_error("glfwCreateWindow(...) failed.");
-
-    glfwMakeContextCurrent(window);
-    
-    Font font;
+    Window window({1280,720}, "Map Search Example");
 
     Map map({40, 30});
 
     int2 startTile;
     bool middleClicked = false;
-    while(!glfwWindowShouldClose(window))
+    while(!window.WindowShouldClose())
     {
         glfwPollEvents();
 
-        int2 frameSize;
-        glfwGetFramebufferSize(window, &frameSize.x, &frameSize.y);
-
         int mapPixelScale = 16;
         int2 mapPixelSize = map.GetDimensions() * mapPixelScale;
+        int2 frameSize = window.GetFramebufferSize();
         int2 mapOffset = (frameSize - mapPixelSize)/2;
 
-        double mouseX, mouseY;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-        int2 tile = {static_cast<int>(floor((mouseX-mapOffset.x) / mapPixelScale)), static_cast<int>(floor((mouseY-mapOffset.y) / mapPixelScale))};
+        double2 mouse = window.GetCursorPos();
+        int2 tile = {static_cast<int>(floor((mouse.x-mapOffset.x) / mapPixelScale)), static_cast<int>(floor((mouse.y-mapOffset.y) / mapPixelScale))};
         if(map.IsValidCoord(tile))
         {
-            if(glfwGetMouseButton(window, 0) == GLFW_PRESS) map.SetObstruction(tile, true);
-            else if(glfwGetMouseButton(window, 1) == GLFW_PRESS) map.SetObstruction(tile, false);
+            if(window.GetMouseButton(0)) map.SetObstruction(tile, true);
+            else if(window.GetMouseButton(1)) map.SetObstruction(tile, false);
 
-            if(!middleClicked && glfwGetMouseButton(window, 2) == GLFW_PRESS)
+            if(!middleClicked && window.GetMouseButton(2))
             {
                 startTile = tile;
                 middleClicked = true;
             }
         }
-        if(glfwGetMouseButton(window, 2) == GLFW_RELEASE) middleClicked = false;
+        if(!window.GetMouseButton(2)) middleClicked = false;
 
         std::vector<int2> path;
         if(middleClicked) path = map.Search(startTile, tile);
 
+        window.MakeContextCurrent();
         glViewport(0, 0, frameSize.x, frameSize.y);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glPushMatrix();
         glOrtho(0, frameSize.x, frameSize.y, 0, -1, +1);
         glColor3f(1,1,0);
-        font.Print(32, 32, "Left-click to add obstruction, right-click to clear obstruction.");
-        font.Print(32, 48, "Middle-click and drag to find a path between two points.");
+        window.Print({32,32}, "Left-click to add obstruction, right-click to clear obstruction.");
+        window.Print({32,48}, "Middle-click and drag to find a path between two points.");
 
         glPushMatrix();
         glTranslated(mapOffset.x, mapOffset.y, 0);
@@ -172,11 +158,9 @@ int main() try
 
         glPopMatrix();
 
-        glfwSwapBuffers(window);
+        window.SwapBuffers();
     }
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
     return 0;
 }
 catch(const std::exception & e)
