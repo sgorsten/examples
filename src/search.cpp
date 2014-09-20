@@ -7,6 +7,9 @@ class Map
 {
     int2 dims;
     std::vector<int> tiles;
+
+    struct OpenNode { int2 state; int lastAction, gCost, fCost; bool operator < (const OpenNode & r) const { return std::tie(r.fCost,-r.gCost) < std::tie(fCost,-gCost); } };
+    std::vector<OpenNode> open;
     std::vector<int> closed;
 
     static const int2 directions[8];
@@ -29,8 +32,7 @@ public:
 
     template<class H> std::vector<int2> Search(const int2 & start, const int2 & goal, H heuristic)
     {
-        struct OpenNode { int2 state; int lastAction, gCost, fCost; bool operator < (const OpenNode & r) const { return std::tie(r.fCost,-r.gCost) < std::tie(fCost,-gCost); } };
-        std::vector<OpenNode> open;
+        open.clear();
         open.push_back({start, 0, 0, heuristic(start, goal)});
 
         closed.clear();
@@ -62,6 +64,7 @@ public:
             {
                 auto newState = state + directions[i];
                 if(!IsValidCoord(newState)) continue;
+                if(IsClosed(newState)) continue;
                 if(IsObstruction(newState)) continue;
                 if(IsObstruction({state.x, newState.y}) && IsObstruction({newState.x, state.y})) continue;
                 auto gCost = node.gCost + costs[i];

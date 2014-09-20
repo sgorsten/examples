@@ -50,6 +50,8 @@ template<class T, int N> bool operator <= (const vec<T,N> & a, const vec<T,N> & 
 template<class T, int N> bool operator >  (const vec<T,N> & a, const vec<T,N> & b) { return a.tuple() >  b.tuple(); }
 template<class T, int N> bool operator >= (const vec<T,N> & a, const vec<T,N> & b) { return a.tuple() >= b.tuple(); }
 
+template<class T, int N> vec<T,N> operator - (const vec<T,N> & a) { return a.zip(T(), [](T a, T) { return -a; }); }
+
 template<class T, int N> vec<T,N> operator + (const vec<T,N> & a, const vec<T,N> & b) { return a.zip(b, [](T a, T b) { return a+b; }); }
 template<class T, int N> vec<T,N> operator - (const vec<T,N> & a, const vec<T,N> & b) { return a.zip(b, [](T a, T b) { return a-b; }); }
 template<class T, int N> vec<T,N> operator * (const vec<T,N> & a, const vec<T,N> & b) { return a.zip(b, [](T a, T b) { return a*b; }); }
