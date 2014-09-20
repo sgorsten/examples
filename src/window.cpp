@@ -10,11 +10,20 @@
 #pragma comment(lib, "glfw3.lib")
 #pragma comment(lib, "opengl32.lib")
 
+void Window::OnKey(GLFWwindow * window, int key, int scancode, int action, int mods)
+{
+    auto ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    if(ptr->keyHandler) ptr->keyHandler(key, scancode, action, mods);
+}
+
 Window::Window(const int2 & dimensions, const char * title)
 {
     if(glfwInit() == GL_FALSE) throw std::runtime_error("glfwInit() failed.");
     window = glfwCreateWindow(dimensions.x, dimensions.y, title, nullptr, nullptr);
     if(window == nullptr) throw std::runtime_error("glfwCreateWindow(...) failed.");
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetKeyCallback(window, OnKey);
 
     const uint32_t compressedFont[] = {
         0,0x18,0,0,0x660000,0xc000018,0,0,0x36661800,0xc1c003e,0xc30,0x40000000,0x36663c00,0xc360063,0x1818,0x60000000,0x7f243c00,0x6364343,0x1866300c,0x30000000,0x36003c00,0x1c6303,0x183c300c,

@@ -27,11 +27,11 @@ public:
 
     void SetObstruction(const int2 & coord, bool isObstruction) { tiles[GetIndex(coord)] = isObstruction ? 1 : 0; }
 
-    std::vector<int2> Search(const int2 & start, const int2 & goal)
+    template<class H> std::vector<int2> Search(const int2 & start, const int2 & goal, H heuristic)
     {
-        struct OpenNode { int2 state; int lastAction, gCost; bool operator < (const OpenNode & r) const { return r.gCost < gCost; } };
+        struct OpenNode { int2 state; int lastAction, gCost, fCost; bool operator < (const OpenNode & r) const { return std::tie(r.fCost,-r.gCost) < std::tie(fCost,-gCost); } };
         std::vector<OpenNode> open;
-        open.push_back({start, 0, 0});
+        open.push_back({start, 0, 0, heuristic(start, goal)});
 
         closed.clear();
         closed.resize(tiles.size(), -1);
@@ -64,13 +64,17 @@ public:
                 if(!IsValidCoord(newState)) continue;
                 if(IsObstruction(newState)) continue;
                 if(IsObstruction({state.x, newState.y}) && IsObstruction({newState.x, state.y})) continue;
-                open.push_back({newState, i, node.gCost + costs[i]});
+                auto gCost = node.gCost + costs[i];
+                open.push_back({newState, i, gCost, gCost + heuristic(newState, goal)});
                 std::push_heap(begin(open), end(open));
             }
         }
 
         return {};
     }
+
+    std::vector<int2> DijkstraSearch(const int2 & start, const int2 & goal) { return Search(start, goal, [](const int2 & a, const int2 & b) { return 0; }); }
+    std::vector<int2> AStarSearch(const int2 & start, const int2 & goal) { return Search(start, goal, [](const int2 & a, const int2 & b) { auto dx = abs(b.x-a.x), dy = abs(b.y-a.y); return 7 * std::min(dx,dy) + 5 * (std::max(dx,dy) - std::min(dx,dy)); }); }
 };
 
 const int2 Map::directions[8] = {{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}};
@@ -90,6 +94,12 @@ int main() try
 {
     Window window({1280,720}, "Map Search Example");
 
+    int algorithm = 0;
+    window.SetKeyHandler([&algorithm](int key, int, int action, int)
+    {
+        if(key == GLFW_KEY_A && action == GLFW_PRESS) algorithm = (algorithm + 1) % 2;
+    });
+
     Map map({40, 30});
 
     int2 startTile;
@@ -101,7 +111,7 @@ int main() try
         int mapPixelScale = 16;
         int2 mapPixelSize = map.GetDimensions() * mapPixelScale;
         int2 frameSize = window.GetFramebufferSize();
-        int2 mapOffset = (frameSize - mapPixelSize)/2;
+        int2 mapOffset = (frameSize - mapPixelSize)/2;       
 
         double2 mouse = window.GetCursorPos();
         int2 tile = {static_cast<int>(floor((mouse.x-mapOffset.x) / mapPixelScale)), static_cast<int>(floor((mouse.y-mapOffset.y) / mapPixelScale))};
@@ -119,7 +129,14 @@ int main() try
         if(!window.GetMouseButton(2)) middleClicked = false;
 
         std::vector<int2> path;
-        if(middleClicked) path = map.Search(startTile, tile);
+        if(middleClicked)
+        {
+            switch(algorithm)
+            {
+            case 0: path = map.AStarSearch(startTile, tile); break;
+            case 1: path = map.DijkstraSearch(startTile, tile); break;
+            }
+        }
 
         window.MakeContextCurrent();
         glViewport(0, 0, frameSize.x, frameSize.y);
@@ -130,6 +147,7 @@ int main() try
         glColor3f(1,1,0);
         window.Print({32,32}, "Left-click to add obstruction, right-click to clear obstruction.");
         window.Print({32,48}, "Middle-click and drag to find a path between two points.");
+        window.Print({32,64}, "Press 'A' to change search algorithm (currently %s)", algorithm ? "Dijkstra search" : "A* search");
 
         glPushMatrix();
         glTranslated(mapOffset.x, mapOffset.y, 0);
