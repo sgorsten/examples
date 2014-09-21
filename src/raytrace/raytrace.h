@@ -73,8 +73,8 @@ struct Sphere
     bool CheckOcclusion(const Ray & ray) const { return IntersectRaySphere(ray, position, radius); }
     Hit Intersect(const Ray & ray) const
     {
-        float t;
-        return IntersectRaySphere(ray, position, radius, &t) ? Hit(t, (ray.origin + ray.direction * t - position) / radius, &material) : Hit();
+        float t; float3 normal;
+        return IntersectRaySphere(ray, position, radius, &t, &normal) ? Hit(t, normal, &material) : Hit();
     }
 };
 

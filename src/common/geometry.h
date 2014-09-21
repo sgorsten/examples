@@ -8,7 +8,7 @@ struct Ray
     float3 direction; // Must be normalized
 };
 
-bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, float * outT=0);
+bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, float * outT=0, float3 * outNormal=0);
 bool IntersectRayTriangle(const Ray & ray, const float3 & vertex0, const float3 & vertex1, const float3 & vertex2, float * outT=0, float2 * outUv=0);
 
 struct Pose

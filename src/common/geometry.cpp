@@ -1,7 +1,7 @@
 #include "geometry.h"
 #include <cmath>
 
-bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, float * outT)
+bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, float * outT, float3 * outNormal)
 {
     auto delta = center - ray.origin;
     float b = dot(ray.direction, delta), disc = b*b + radius*radius - mag2(delta);
@@ -16,6 +16,7 @@ bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, fl
     }
 
     if(outT) *outT = t;
+    if(outNormal) *outNormal = t ? (ray.direction * t - delta) / radius : norm(ray.direction * t - delta);
     return true;
 }
 
