@@ -4,7 +4,6 @@
 #include <functional>
 #include <GLFW\glfw3.h>
 
-
 class Window
 {
     GLFWwindow * window = 0;

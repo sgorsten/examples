@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "search", "search.vcxproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "common.vcxproj", "{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "raytrace", "raytrace.vcxproj", "{5E724745-79D0-4BEE-ACB5-F5C904CA9153}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -41,6 +43,14 @@ Global
 		{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}.Release|Win32.Build.0 = Release|Win32
 		{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}.Release|x64.ActiveCfg = Release|x64
 		{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}.Release|x64.Build.0 = Release|x64
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Debug|Win32.Build.0 = Debug|Win32
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Debug|x64.ActiveCfg = Debug|x64
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Debug|x64.Build.0 = Debug|x64
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Release|Win32.ActiveCfg = Release|Win32
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Release|Win32.Build.0 = Release|Win32
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Release|x64.ActiveCfg = Release|x64
+		{5E724745-79D0-4BEE-ACB5-F5C904CA9153}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

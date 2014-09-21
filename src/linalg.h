@@ -70,6 +70,13 @@ template<class T, int N, class U> vec<T,N> & operator *= (vec<T,N> & a, const U 
 template<class T, int N, class U> vec<T,N> & operator /= (vec<T,N> & a, const U & b) { return a = a/b; }
 template<class T, int N, class U> vec<T,N> & operator %= (vec<T,N> & a, const U & b) { return a = a%b; }
 
+template<class T> T dot(const vec<T,2> & a, const vec<T,2> & b) { return a.x*b.x + a.y*b.y; }
+template<class T> T dot(const vec<T,3> & a, const vec<T,3> & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
+template<class T> T dot(const vec<T,4> & a, const vec<T,4> & b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
+template<class T, int N> T mag2(const vec<T,N> & a) { return dot(a,a); }
+template<class T, int N> T mag(const vec<T,N> & a) { return std::sqrt(mag2(a)); }
+template<class T, int N> vec<T,N> norm(const vec<T,N> & a) { return a/mag(a); }
+
 typedef vec<int,2> int2; typedef vec<float,2> float2; typedef vec<double,2> double2;
 typedef vec<int,3> int3; typedef vec<float,3> float3; typedef vec<double,3> double3;
 typedef vec<int,4> int4; typedef vec<float,4> float4; typedef vec<double,4> double4;
