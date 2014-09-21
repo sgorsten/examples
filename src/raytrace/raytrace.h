@@ -17,7 +17,7 @@ struct Material
 struct Hit
 {
     float distance;
-    float3 normal;
+    float3 point, normal;
     const Material * material;
 
     Hit() : distance(std::numeric_limits<float>::infinity()), material() {}
@@ -40,7 +40,7 @@ struct DirectionalLight
     float3 direction;
     float3 color;
 
-    float3 ComputeContribution(const Hit & hit) const;
+    float3 ComputeContribution(const Hit & hit, const float3 & eyeDir) const;
 };
 
 struct Scene
@@ -50,9 +50,9 @@ struct Scene
 
     std::vector<Sphere> spheres;
 
-    float3 ComputeLighting(const Hit & hit) const;
+    float3 ComputeLighting(const Hit & hit, const float3 & viewPosition) const;
 
-    float3 CastPrimaryRay(const Ray & ray) const
+    float3 CastPrimaryRay(const Ray & ray, const float3 & viewPosition) const
     {
         Hit bestHit;
         for(auto & sphere : spheres)
@@ -60,8 +60,8 @@ struct Scene
             auto hit = sphere.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
-
-        return bestHit.IsHit() ? ComputeLighting(bestHit) : float3(0,0,0);
+        bestHit.point = ray.origin + ray.direction * bestHit.distance;
+        return bestHit.IsHit() ? ComputeLighting(bestHit, viewPosition) : float3(0,0,0);
     }
 };
 

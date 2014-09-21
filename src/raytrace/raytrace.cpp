@@ -32,7 +32,7 @@ struct RaytracedImage
         auto halfDims = float2(dimensions - 1) * 0.5f;
         auto aspectRatio = (float)dimensions.x / dimensions.y;
         auto viewDirection = norm(float3((coord.x-halfDims.x)*aspectRatio/halfDims.x, (halfDims.y-coord.y)/halfDims.y, -1));
-        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay({viewPosition, qrot(viewOrientation, viewDirection)});
+        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay({viewPosition, qrot(viewOrientation, viewDirection)}, viewPosition);
     }
 
     void RaytraceLine(const Scene & scene)
