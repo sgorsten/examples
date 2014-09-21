@@ -19,12 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\search.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="common.vcxproj">
       <Project>{6d99be21-6fc0-4b0b-a4cc-c3e48628ffa9}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\search\search.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3FE22166-AA2C-4E8B-B82D-1A645F062758}</ProjectGuid>

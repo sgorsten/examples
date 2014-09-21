@@ -19,11 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\window.cpp" />
+    <ClInclude Include="..\src\common\linalg.h" />
+    <ClInclude Include="..\src\common\window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\window.h" />
-    <ClInclude Include="..\src\linalg.h" />
+    <ClCompile Include="..\src\common\window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6D99BE21-6FC0-4B0B-A4CC-C3E48628FFA9}</ProjectGuid>

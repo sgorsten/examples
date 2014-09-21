@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\src\raytrace.cpp" />
+    <ClCompile Include="..\src\raytrace\raytrace.cpp" />
+    <ClCompile Include="..\src\raytrace\shape.cpp" />
+    <ClCompile Include="..\src\raytrace\light.cpp" />
+    <ClCompile Include="..\src\raytrace\ref-gl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\raytrace\raytrace.h" />
   </ItemGroup>
 </Project>

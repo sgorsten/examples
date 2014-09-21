@@ -1,56 +1,10 @@
+#include "raytrace.h"
+
 #define GLFW_INCLUDE_GLU
+#include "window.h"
 #pragma comment(lib, "glu32.lib")
 
-#include "window.h"
-
-#include <vector>
 #include <algorithm>
-
-struct Ray
-{
-    float3 origin;
-    float3 direction;
-};
-
-struct Material
-{
-    float3 albedo;
-};
-
-struct Hit
-{
-    float distance;
-    float3 normal;
-    const Material * material;
-
-    Hit() : distance(std::numeric_limits<float>::infinity()), material() {}
-    Hit(float distance, float3 normal, const Material * material) : distance(distance), normal(normal), material(material) {}
-
-    bool IsHit() const { return distance < std::numeric_limits<float>::infinity(); }
-};
-
-struct Sphere
-{
-    Material material;
-    float3 position;
-    float radius;
-
-    Hit Intersect(const Ray & ray) const
-    {
-        // ray.direction must be of unit length
-        auto delta = position - ray.origin;
-        float b = dot(ray.direction, delta), disc = b*b + radius*radius - mag2(delta);
-        if(disc < 0) return {};
-        float t = b - sqrt(disc);
-        return Hit(t, (ray.direction * t - delta) / radius, &material);
-    }
-};
-
-struct Scene
-{
-    std::vector<Sphere> spheres;
-};
-
 #include <iostream>
 
 int main(int argc, char * argv[]) try
@@ -58,6 +12,9 @@ int main(int argc, char * argv[]) try
     Window window({1280,720}, "Raytracing Example");
 
     Scene scene;
+    scene.ambientLight = float3(0.3f,0.3f,0.3f);
+    scene.dirLight.direction = {0,1,0};
+    scene.dirLight.color = {0.8f,0.8f,0.5f};
     scene.spheres.push_back({Material{{1,1,1}}, {0,0,-5}, 2});
     scene.spheres.push_back({Material{{1,0.5f,0.5f}}, {3,-1,-7}, 2});
     scene.spheres.push_back({Material{{0.3f,1,0.3f}}, {-3,-2,-6}, 2});
@@ -78,28 +35,7 @@ int main(int argc, char * argv[]) try
 
         if(line < 256)
         {
-            Ray ray;
-            ray.origin = {0,0,0};
-            for(int x=0; x<256; ++x)
-            {
-                auto ambient = float3(0.3f,0.3f,0.3f);
-                ray.direction = norm(float3((x-127.5f)/127.5f, (127.5f-line)/127.5f, -1));
-                Hit bestHit;
-                for(auto & sphere : scene.spheres)
-                {
-                    auto hit = sphere.Intersect(ray);
-                    if(hit.distance < bestHit.distance) bestHit = hit;
-                }
-                if(bestHit.IsHit())
-                {  
-                    auto diffuse = float3(0.8f,0.8f,0.5f) * std::max(dot(bestHit.normal, float3(0,1,0)), 0.0f);
-                    image[line*256+x] = bestHit.material->albedo * (ambient + diffuse);
-                }
-                else
-                {
-                    image[line*256+x] = float3(0,0,0);
-                }
-            }
+            for(int x=0; x<256; ++x) image[line*256+x] = scene.CastPrimaryRay({{0,0,0}, norm(float3((x-127.5f)/127.5f, (127.5f-line)/127.5f, -1))});
             ++line;
         }
 
@@ -139,25 +75,7 @@ int main(int argc, char * argv[]) try
         glPushMatrix();
         gluLookAt(0,0,0, 0,0,-1, 0,1,0);
 
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_LIGHTING);
-
-        float lightPos[] = {0,1,0,0}, lightDiffuse[] = {0.8f,0.8f,0.5f,1.0f}, lightSpecular[] = {0,0,0,0}, lightAmbient[] = {0.3f,0.3f,0.3f,0};
-        glEnable(GL_LIGHT0);
-        glEnable(GL_COLOR_MATERIAL);
-        glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-        glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
-        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lightAmbient);
-        
-        for(auto & sphere : scene.spheres)
-        {
-            glPushMatrix();
-            glTranslatef(sphere.position.x, sphere.position.y, sphere.position.z);
-            glColor3fv(&sphere.material.albedo.x);
-            gluSphere(quad, sphere.radius, 24, 24);
-            glPopMatrix();
-        }
+        DrawReferenceSceneGL(scene);
 
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);

@@ -19,12 +19,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\raytrace.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="common.vcxproj">
       <Project>{6d99be21-6fc0-4b0b-a4cc-c3e48628ffa9}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\raytrace\light.cpp" />
+    <ClCompile Include="..\src\raytrace\raytrace.cpp" />
+    <ClCompile Include="..\src\raytrace\ref-gl.cpp" />
+    <ClCompile Include="..\src\raytrace\shape.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\raytrace\raytrace.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5E724745-79D0-4BEE-ACB5-F5C904CA9153}</ProjectGuid>
