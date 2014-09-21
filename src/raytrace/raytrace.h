@@ -45,6 +45,7 @@ struct DirectionalLight
 
 struct Scene
 {
+    float3 skyColor;
     float3 ambientLight;
     DirectionalLight dirLight;
 
@@ -61,7 +62,7 @@ struct Scene
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
         bestHit.point = ray.origin + ray.direction * bestHit.distance;
-        return bestHit.IsHit() ? ComputeLighting(bestHit, viewPosition) : float3(0,0,0);
+        return bestHit.IsHit() ? ComputeLighting(bestHit, viewPosition) : skyColor;
     }
 };
 

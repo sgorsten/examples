@@ -57,6 +57,7 @@ int main(int argc, char * argv[]) try
     glGenTextures(1, &texture);
 
     Scene scene;
+    scene.skyColor = float3(0,0.5f,1.0f);
     scene.ambientLight = float3(0.3f,0.3f,0.3f);
     scene.dirLight.direction = {0,1,0};
     scene.dirLight.color = {0.8f,0.8f,0.5f};
@@ -113,7 +114,7 @@ int main(int argc, char * argv[]) try
         window.MakeContextCurrent();
         if(!image.IsComplete())
         {
-            for(int i=0; i<8; ++i) image.RaytraceLine(scene);
+            for(int i=0; i<64; ++i) image.RaytraceLine(scene);
             glBindTexture(GL_TEXTURE_2D, texture);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.dimensions.x, image.currentLine, 0, GL_RGB, GL_FLOAT, image.pixels.data());
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -125,7 +126,9 @@ int main(int argc, char * argv[]) try
         glViewport(0, 0, frameSize.x, frameSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glEnable(GL_SCISSOR_TEST);
         glViewport(0, 0, frameSize.x/2, frameSize.y);
+        glScissor(0, 0, frameSize.x/2, frameSize.y);
 
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -139,16 +142,26 @@ int main(int argc, char * argv[]) try
         glDisable(GL_TEXTURE_2D);
 
         glViewport(frameSize.x/2, 0, frameSize.x/2, frameSize.y);
+        glScissor(frameSize.x/2, 0, frameSize.x/2, frameSize.y);
         DrawReferenceSceneGL(scene, position, orientation, frameSize.x*0.5f/frameSize.y);
 
+        glDisable(GL_SCISSOR_TEST);
         glViewport(0, 0, frameSize.x, frameSize.y);
+
+        glBegin(GL_LINES);
+        glColor3f(1,1,1);
+        glVertex2f(0,-1);
+        glVertex2f(0,+1);
+        glEnd();
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glOrtho(0, frameSize.x, frameSize.y, 0, -1, +1);
       
         glColor3f(1,1,0);
-        window.Print({32,32}, "Press space to raytrace scene");
-        window.Print({frameSize.x/2+32,32}, "Reference render in OpenGL");
+        window.Print({16,16}, "Press space to raytrace scene");
+        window.Print({frameSize.x/2+16,16}, "Reference render in OpenGL");
+        window.Print({frameSize.x/2+16,32}, "Use W/A/S/D to move and drag left mouse button to look");
         glPopMatrix();
 
         glPopAttrib();
