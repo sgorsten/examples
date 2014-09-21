@@ -17,5 +17,11 @@ float3 Scene::ComputeLighting(const Hit & hit, const float3 & viewPosition) cons
         auto eyeDir = norm(viewPosition - hit.point);
         light += dirLight.ComputeContribution(hit, eyeDir);
     }
+    if(hit.material->reflectivity)
+    {
+        auto direction = norm(hit.point - viewPosition);
+        direction -= hit.normal * (dot(direction, hit.normal) * 2);
+        light += hit.material->albedo * CastPrimaryRay({hit.point, direction}, hit.material) * hit.material->reflectivity;
+    }
     return light;
 }

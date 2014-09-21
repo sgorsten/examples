@@ -30,7 +30,7 @@ struct RaytracedImage
         auto halfDims = float2(dimensions - 1) * 0.5f;
         auto aspectRatio = (float)dimensions.x / dimensions.y;
         auto viewDirection = norm(float3((coord.x-halfDims.x)*aspectRatio/halfDims.x, (halfDims.y-coord.y)/halfDims.y, -1));
-        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay(viewPose * Ray{{0,0,0}, viewDirection}, viewPose.position);
+        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay(viewPose * Ray{{0,0,0}, viewDirection});
     }
 
     void RaytraceLine(const Scene & scene)
@@ -60,7 +60,7 @@ int main(int argc, char * argv[]) try
     scene.dirLight.direction = norm(float3(0.2f,1,-0.1f));
     scene.dirLight.color = {0.8f,0.8f,0.5f};
     scene.spheres.push_back({Material{{1,1,1}}, {0,0,-5}, 2});
-    scene.spheres.push_back({Material{{1,0.5f,0.5f}}, {3,-1,-7}, 2});
+    scene.spheres.push_back({Material{{1,0.5f,0.5f},0.5f}, {3,-1,-7}, 2});
     scene.spheres.push_back({Material{{0.3f,1,0.3f}}, {-3,-2,-6}, 2});
     scene.spheres.push_back({Material{{0.4f,0.4f,1}}, {-1.5f,+2,-6}, 2});
 

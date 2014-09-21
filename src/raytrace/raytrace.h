@@ -7,6 +7,7 @@
 struct Material
 {
     float3 albedo;
+    float reflectivity;
 };
 
 struct Hit
@@ -104,21 +105,23 @@ struct Scene
         return false;
     }
 
-    float3 CastPrimaryRay(const Ray & ray, const float3 & viewPosition) const
+    float3 CastPrimaryRay(const Ray & ray, const Material * ignore = 0) const
     {
         Hit bestHit;
         for(auto & sphere : spheres)
         {
+            if(&sphere.material == ignore) continue;
             auto hit = sphere.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
         for(auto & mesh : meshes)
         {
+            if(&mesh.material == ignore) continue;
             auto hit = mesh.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
         bestHit.point = ray.origin + ray.direction * bestHit.distance;
-        return bestHit.IsHit() ? ComputeLighting(bestHit, viewPosition) : skyColor;
+        return bestHit.IsHit() ? ComputeLighting(bestHit, ray.origin) : skyColor;
     }
 };
 
