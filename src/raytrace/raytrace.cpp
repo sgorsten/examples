@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <chrono>
 
 int main(int argc, char * argv[]) try
 {
@@ -27,17 +28,47 @@ int main(int argc, char * argv[]) try
         if(key == GLFW_KEY_SPACE && action == GLFW_PRESS) line = 0;
     });
 
-    auto quad = gluNewQuadric();
+    auto mousePos = window.GetCursorPos();
+    float pitch=0, yaw=0;
 
+    float3 position;
+    float4 orientation = {0,0,0,1};
+
+    auto t0 = std::chrono::monotonic_clock::now();
     while(!window.WindowShouldClose())
     {
         glfwPollEvents();
 
+        auto t1 = std::chrono::monotonic_clock::now();
+        float timestep = std::chrono::duration<float>(t1 - t0).count();
+        t0 = t1;
+
+        auto newMousePos = window.GetCursorPos();
+        auto mouseDelta = newMousePos - mousePos;
+        mousePos = newMousePos;
+
+        if(line == 256)
+        {
+            if(window.GetMouseButton(0))
+            {
+                yaw -= mouseDelta.x * 0.01f;
+                pitch -= mouseDelta.y * 0.01f;
+                orientation = qmul(float4(float3(0,1,0) * std::sin(yaw/2), std::cos(yaw/2)), float4(float3(1,0,0) * std::sin(pitch/2), std::cos(pitch/2)));
+            }
+
+            if(window.GetKey(GLFW_KEY_W)) position -= qzdir(orientation) * (timestep * 8);
+            if(window.GetKey(GLFW_KEY_S)) position += qzdir(orientation) * (timestep * 8);
+            if(window.GetKey(GLFW_KEY_A)) position -= qxdir(orientation) * (timestep * 8);
+            if(window.GetKey(GLFW_KEY_D)) position += qxdir(orientation) * (timestep * 8);
+        }
+
         if(line < 256)
         {
-            for(int x=0; x<256; ++x) image[line*256+x] = scene.CastPrimaryRay({{0,0,0}, norm(float3((x-127.5f)/127.5f, (127.5f-line)/127.5f, -1))});
+            for(int x=0; x<256; ++x) image[line*256+x] = scene.CastPrimaryRay({position, qrot(orientation, norm(float3((x-127.5f)/127.5f, (127.5f-line)/127.5f, -1)))});
             ++line;
         }
+
+        
 
         auto frameSize = window.GetFramebufferSize();
         window.MakeContextCurrent();
@@ -73,7 +104,8 @@ int main(int argc, char * argv[]) try
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-        gluLookAt(0,0,0, 0,0,-1, 0,1,0);
+        float3 center = position - qzdir(orientation), up = qydir(orientation);
+        gluLookAt(position.x,position.y,position.z, center.x,center.y,center.z, up.x,up.y,up.z);
 
         DrawReferenceSceneGL(scene);
 
