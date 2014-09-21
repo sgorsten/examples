@@ -35,6 +35,34 @@ struct Sphere
     Hit Intersect(const Ray & ray) const;
 };
 
+struct Triangle
+{
+    Material material;
+    float3 v0,v1,v2;
+
+    Hit Intersect(const Ray & ray) const
+    {
+        auto e1 = v1 - v0, e2 = v2 - v0;
+        auto h = cross(ray.direction, e2);
+        auto a = dot(e1, h);
+        if (a > -0.00001f && a < 0.00001f) return {};
+
+        auto f = 1/a;
+        auto s = ray.origin - v0;
+        auto u = f * dot(s,h);
+        if (u < 0 || u > 1) return {};
+
+        auto q = cross(s,e1);
+        auto v = f * dot(ray.direction,q);
+        if (v < 0 || u + v > 1) return {};
+
+        auto t = f * dot(e2,q);
+        if(t < 0) return {};
+
+        return Hit(t, norm(cross(e1,e2)), &material);
+    }
+};
+
 struct DirectionalLight
 {
     float3 direction;
@@ -50,6 +78,7 @@ struct Scene
     DirectionalLight dirLight;
 
     std::vector<Sphere> spheres;
+    std::vector<Triangle> triangles;
 
     float3 ComputeLighting(const Hit & hit, const float3 & viewPosition) const;
 
@@ -59,6 +88,11 @@ struct Scene
         for(auto & sphere : spheres)
         {
             auto hit = sphere.Intersect(ray);
+            if(hit.distance < bestHit.distance) bestHit = hit;
+        }
+        for(auto & triangle : triangles)
+        {
+            auto hit = triangle.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
         bestHit.point = ray.origin + ray.direction * bestHit.distance;

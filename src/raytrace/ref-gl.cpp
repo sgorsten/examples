@@ -33,7 +33,7 @@ void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, cons
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
-    gluPerspective(90, aspectRatio, 0.1f, 16.0f);
+    gluPerspective(90, aspectRatio, 0.25f, 64.0f);
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -53,6 +53,21 @@ void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, cons
         glMateriali(GL_FRONT, GL_SHININESS, 64);
         gluSphere(quad, sphere.radius, 24, 24);
         glPopMatrix();
+    }
+    
+    for(auto & triangle : scene.triangles)
+    {
+        glMaterial(GL_FRONT, GL_AMBIENT, {triangle.material.albedo,1});
+        glMaterial(GL_FRONT, GL_DIFFUSE, {triangle.material.albedo,1});
+        glMaterial(GL_FRONT, GL_SPECULAR, {triangle.material.albedo,1});
+        glMateriali(GL_FRONT, GL_SHININESS, 64);
+        glBegin(GL_TRIANGLES);
+        auto n = norm(cross(triangle.v1-triangle.v0, triangle.v2-triangle.v0));
+        glNormal3fv(&n.x);
+        glVertex3fv(&triangle.v0.x);
+        glVertex3fv(&triangle.v1.x);
+        glVertex3fv(&triangle.v2.x);
+        glEnd();
     }
 
     glPopMatrix();

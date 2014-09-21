@@ -65,6 +65,8 @@ int main(int argc, char * argv[]) try
     scene.spheres.push_back({Material{{1,0.5f,0.5f}}, {3,-1,-7}, 2});
     scene.spheres.push_back({Material{{0.3f,1,0.3f}}, {-3,-2,-6}, 2});
     scene.spheres.push_back({Material{{0.4f,0.4f,1}}, {-1.5f,+2,-6}, 2});
+    scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,0}, {10,-4,-20}});
+    scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,-20}, {-10,-4,-20}});
 
     float3 position;
     float4 orientation = {0,0,0,1};

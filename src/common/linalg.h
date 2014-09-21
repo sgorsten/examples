@@ -72,6 +72,8 @@ template<class T, int N, class U> vec<T,N> & operator *= (vec<T,N> & a, const U 
 template<class T, int N, class U> vec<T,N> & operator /= (vec<T,N> & a, const U & b) { return a = a/b; }
 template<class T, int N, class U> vec<T,N> & operator %= (vec<T,N> & a, const U & b) { return a = a%b; }
 
+template<class T> T cross(const vec<T,2> & a, const vec<T,2> & b) { return a.x*b.y - a.y*b.x; }
+template<class T> vec<T,3> cross(const vec<T,3> & a, const vec<T,3> & b) { return vec<T,3>{a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x}; }
 template<class T> T dot(const vec<T,2> & a, const vec<T,2> & b) { return a.x*b.x + a.y*b.y; }
 template<class T> T dot(const vec<T,3> & a, const vec<T,3> & b) { return a.x*b.x + a.y*b.y + a.z*b.z; }
 template<class T> T dot(const vec<T,4> & a, const vec<T,4> & b) { return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w; }
