@@ -65,4 +65,4 @@ struct Scene
     }
 };
 
-void DrawReferenceSceneGL(const Scene & scene);
+void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, const float4 & viewOrientation, float aspectRatio);

@@ -22,11 +22,20 @@ void SetupLightingEnvironment(const Scene & scene)
     glLight(GL_LIGHT0, GL_SPECULAR, {0,0,0,0});
 }
 
-void DrawReferenceSceneGL(const Scene & scene)
+void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, const float4 & viewOrientation, float aspectRatio)
 {
     static GLUquadric * quad = gluNewQuadric();
 
     glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    gluPerspective(90, aspectRatio, 0.1f, 16.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    float3 eye = viewPosition, center = viewPosition - qzdir(viewOrientation), up = qydir(viewOrientation);
+    gluLookAt(eye.x,eye.y,eye.z, center.x,center.y,center.z, up.x,up.y,up.z); 
 
     SetupLightingEnvironment(scene);
 
@@ -39,6 +48,10 @@ void DrawReferenceSceneGL(const Scene & scene)
         gluSphere(quad, sphere.radius, 24, 24);
         glPopMatrix();
     }
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
 
     glPopAttrib();
 }
