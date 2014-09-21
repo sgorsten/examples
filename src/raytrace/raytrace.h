@@ -1,13 +1,7 @@
 #pragma once
 
-#include "linalg.h"
+#include "geometry.h"
 #include <vector>
-
-struct Ray
-{
-    float3 origin;
-    float3 direction;
-};
 
 struct Material
 {
@@ -32,7 +26,12 @@ struct Sphere
     float3 position;
     float radius;
 
-    Hit Intersect(const Ray & ray) const;
+    bool CheckOcclusion(const Ray & ray) const { return IntersectRaySphere(ray, position, radius); }
+    Hit Intersect(const Ray & ray) const
+    {
+        float t;
+        return IntersectRaySphere(ray, position, radius, &t) ? Hit(t, (ray.origin + ray.direction * t - position) / radius, &material) : Hit();
+    }
 };
 
 struct Triangle
@@ -40,26 +39,11 @@ struct Triangle
     Material material;
     float3 v0,v1,v2;
 
+    bool CheckOcclusion(const Ray & ray) const { return IntersectRayTriangle(ray, v0, v1, v2); }
     Hit Intersect(const Ray & ray) const
     {
-        auto e1 = v1 - v0, e2 = v2 - v0;
-        auto h = cross(ray.direction, e2);
-        auto a = dot(e1, h);
-        if (a > -0.00001f && a < 0.00001f) return {};
-
-        auto f = 1/a;
-        auto s = ray.origin - v0;
-        auto u = f * dot(s,h);
-        if (u < 0 || u > 1) return {};
-
-        auto q = cross(s,e1);
-        auto v = f * dot(ray.direction,q);
-        if (v < 0 || u + v > 1) return {};
-
-        auto t = f * dot(e2,q);
-        if(t < 0) return {};
-
-        return Hit(t, norm(cross(e1,e2)), &material);
+        float t;
+        return IntersectRayTriangle(ray, v0, v1, v2, &t) ? Hit(t, norm(cross(v1-v0, v2-v0)), &material) : Hit();
     }
 };
 
@@ -82,6 +66,13 @@ struct Scene
 
     float3 ComputeLighting(const Hit & hit, const float3 & viewPosition) const;
 
+    bool CheckOcclusion(const Ray & ray, const Material * ignore) const
+    {
+        for(auto & sphere : spheres) if(&sphere.material != ignore && sphere.CheckOcclusion(ray)) return true;
+        for(auto & triangle : triangles) if(&triangle.material != ignore && triangle.CheckOcclusion(ray)) return true;
+        return false;
+    }
+
     float3 CastPrimaryRay(const Ray & ray, const float3 & viewPosition) const
     {
         Hit bestHit;
@@ -100,4 +91,4 @@ struct Scene
     }
 };
 
-void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, const float4 & viewOrientation, float aspectRatio);
+void DrawReferenceSceneGL(const Scene & scene, const Pose & viewPose, float aspectRatio);

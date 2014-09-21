@@ -12,20 +12,7 @@ float3 DirectionalLight::ComputeContribution(const Hit & hit, const float3 & eye
 float3 Scene::ComputeLighting(const Hit & hit, const float3 & viewPosition) const
 {
     auto light = hit.material->albedo * ambientLight;
-
-    bool lit = true;
-    Ray ray = {hit.point, dirLight.direction};
-    for(auto & sphere : spheres)
-    {
-        if(hit.material == &sphere.material) continue;
-        auto hit = sphere.Intersect(ray);
-        if(hit.IsHit())
-        {
-            lit = false;
-            break;
-        }        
-    }
-    if(lit)
+    if(!CheckOcclusion({hit.point, dirLight.direction}, hit.material))
     {
         auto eyeDir = norm(viewPosition - hit.point);
         light += dirLight.ComputeContribution(hit, eyeDir);

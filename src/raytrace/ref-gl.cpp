@@ -22,7 +22,7 @@ void SetupLightingEnvironment(const Scene & scene)
     glLight(GL_LIGHT0, GL_SPECULAR, {scene.dirLight.color,1});
 }
 
-void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, const float4 & viewOrientation, float aspectRatio)
+void DrawReferenceSceneGL(const Scene & scene, const Pose & viewPose, float aspectRatio)
 {
     static GLUquadric * quad = gluNewQuadric();
 
@@ -37,7 +37,7 @@ void DrawReferenceSceneGL(const Scene & scene, const float3 & viewPosition, cons
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
-    float3 eye = viewPosition, center = viewPosition - qzdir(viewOrientation), up = qydir(viewOrientation);
+    float3 eye = viewPose.position, center = eye - viewPose.GetZDir(), up = viewPose.GetYDir();
     gluLookAt(eye.x,eye.y,eye.z, center.x,center.y,center.z, up.x,up.y,up.z); 
 
     SetupLightingEnvironment(scene);

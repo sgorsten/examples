@@ -3,8 +3,10 @@
   <ItemGroup>
     <ClInclude Include="..\src\common\linalg.h" />
     <ClInclude Include="..\src\common\window.h" />
+    <ClInclude Include="..\src\common\geometry.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\common\window.cpp" />
+    <ClCompile Include="..\src\common\geometry.cpp" />
   </ItemGroup>
 </Project>

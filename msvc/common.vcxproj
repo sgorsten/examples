@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\common\geometry.h" />
     <ClInclude Include="..\src\common\linalg.h" />
     <ClInclude Include="..\src\common\window.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\common\geometry.cpp" />
     <ClCompile Include="..\src\common\window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

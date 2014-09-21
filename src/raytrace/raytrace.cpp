@@ -12,18 +12,16 @@ struct RaytracedImage
 {
     std::vector<float3> pixels;
     int2 dimensions;
-    float3 viewPosition;
-    float4 viewOrientation;
+    Pose viewPose;
     int currentLine = 0;
 
     bool IsComplete() const { return currentLine == dimensions.y; }
 
-    void Reset(const int2 & dimensions, const float3 & viewPosition, const float4 & viewOrientation)
+    void Reset(const int2 & dimensions, const Pose & viewPose)
     {
         pixels.resize(dimensions.x * dimensions.y);
         this->dimensions = dimensions;
-        this->viewPosition = viewPosition;
-        this->viewOrientation = viewOrientation;
+        this->viewPose = viewPose;
         currentLine = 0;
     }
 
@@ -32,7 +30,7 @@ struct RaytracedImage
         auto halfDims = float2(dimensions - 1) * 0.5f;
         auto aspectRatio = (float)dimensions.x / dimensions.y;
         auto viewDirection = norm(float3((coord.x-halfDims.x)*aspectRatio/halfDims.x, (halfDims.y-coord.y)/halfDims.y, -1));
-        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay({viewPosition, qrot(viewOrientation, viewDirection)}, viewPosition);
+        pixels[coord.y * dimensions.x + coord.x] = scene.CastPrimaryRay(viewPose * Ray{{0,0,0}, viewDirection}, viewPose.position);
     }
 
     void RaytraceLine(const Scene & scene)
@@ -68,8 +66,7 @@ int main(int argc, char * argv[]) try
     scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,0}, {10,-4,-20}});
     scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,-20}, {-10,-4,-20}});
 
-    float3 position;
-    float4 orientation = {0,0,0,1};
+    Pose viewPose;
 
     RaytracedImage image;
 
@@ -77,14 +74,14 @@ int main(int argc, char * argv[]) try
     {
         if(key == GLFW_KEY_SPACE && action == GLFW_PRESS)
         {
-            image.Reset(window.GetFramebufferSize()/int2(2,1), position, orientation);
+            image.Reset(window.GetFramebufferSize()/int2(2,1), viewPose);
         }
     });
 
     auto mousePos = window.GetCursorPos();
     float pitch=0, yaw=0;
 
-    image.Reset(window.GetFramebufferSize()/int2(2,1), position, orientation);
+    image.Reset(window.GetFramebufferSize()/int2(2,1), viewPose);
     image.RaytracePixel(scene, window.GetFramebufferSize()/int2(4,2));
 
     auto t0 = std::chrono::monotonic_clock::now();
@@ -102,15 +99,15 @@ int main(int argc, char * argv[]) try
 
         if(window.GetMouseButton(0))
         {
-            yaw -= mouseDelta.x * 0.01f;
-            pitch -= mouseDelta.y * 0.01f;
-            orientation = qmul(float4(float3(0,1,0) * std::sin(yaw/2), std::cos(yaw/2)), float4(float3(1,0,0) * std::sin(pitch/2), std::cos(pitch/2)));
+            yaw -= float(mouseDelta.x * 0.01);
+            pitch -= float(mouseDelta.y * 0.01);
+            viewPose.orientation = qmul(float4(float3(0,1,0) * std::sin(yaw/2), std::cos(yaw/2)), float4(float3(1,0,0) * std::sin(pitch/2), std::cos(pitch/2)));
         }
 
-        if(window.GetKey(GLFW_KEY_W)) position -= qzdir(orientation) * (timestep * 8);
-        if(window.GetKey(GLFW_KEY_S)) position += qzdir(orientation) * (timestep * 8);
-        if(window.GetKey(GLFW_KEY_A)) position -= qxdir(orientation) * (timestep * 8);
-        if(window.GetKey(GLFW_KEY_D)) position += qxdir(orientation) * (timestep * 8);
+        if(window.GetKey(GLFW_KEY_W)) viewPose.position -= viewPose.GetZDir() * (timestep * 8);
+        if(window.GetKey(GLFW_KEY_S)) viewPose.position += viewPose.GetZDir() * (timestep * 8);
+        if(window.GetKey(GLFW_KEY_A)) viewPose.position -= viewPose.GetXDir() * (timestep * 8);
+        if(window.GetKey(GLFW_KEY_D)) viewPose.position += viewPose.GetXDir() * (timestep * 8);
 
         auto frameSize = window.GetFramebufferSize();
         window.MakeContextCurrent();
@@ -145,7 +142,7 @@ int main(int argc, char * argv[]) try
 
         glViewport(frameSize.x/2, 0, frameSize.x/2, frameSize.y);
         glScissor(frameSize.x/2, 0, frameSize.x/2, frameSize.y);
-        DrawReferenceSceneGL(scene, position, orientation, frameSize.x*0.5f/frameSize.y);
+        DrawReferenceSceneGL(scene, viewPose, frameSize.x*0.5f/frameSize.y);
 
         glDisable(GL_SCISSOR_TEST);
         glViewport(0, 0, frameSize.x, frameSize.y);

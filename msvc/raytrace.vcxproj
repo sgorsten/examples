@@ -27,7 +27,6 @@
     <ClCompile Include="..\src\raytrace\light.cpp" />
     <ClCompile Include="..\src\raytrace\raytrace.cpp" />
     <ClCompile Include="..\src\raytrace\ref-gl.cpp" />
-    <ClCompile Include="..\src\raytrace\shape.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\raytrace\raytrace.h" />
