@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry.h"
+#include <algorithm>
 #include <vector>
 
 struct Material
@@ -20,6 +21,49 @@ struct Hit
     bool IsHit() const { return distance < std::numeric_limits<float>::infinity(); }
 };
 
+struct Mesh
+{
+    Material material;
+    std::vector<float3> vertices;
+    std::vector<int3> triangles;
+
+    float3 boundCenter;
+    float boundRadius;
+
+    void ComputeBounds()
+    {
+        boundCenter = {0,0,0};
+        for(auto & vert : vertices) boundCenter += vert;
+        boundCenter *= 1.0f/vertices.size();
+        boundRadius = 0;
+        for(auto & vert : vertices) boundRadius = std::max(boundRadius, mag(vert - boundCenter));
+    }
+
+    bool CheckOcclusion(const Ray & ray) const 
+    {
+        if(!IntersectRaySphere(ray, boundCenter, boundRadius)) return false;
+        for(auto & tri : triangles) if(IntersectRayTriangle(ray, vertices[tri.x], vertices[tri.y], vertices[tri.z])) return true;
+        return false;
+    }
+    Hit Intersect(const Ray & ray) const
+    {
+        if(!IntersectRaySphere(ray, boundCenter, boundRadius)) return Hit();
+        const int3 * bestTri = 0;
+        float bestT = std::numeric_limits<float>::infinity();
+        for(auto & tri : triangles)
+        {
+            float t;
+            if(IntersectRayTriangle(ray, vertices[tri.x], vertices[tri.y], vertices[tri.z], &t))
+            if(t < bestT)
+            {
+                bestTri = &tri;
+                bestT = t;
+            }
+        }
+        return bestTri ? Hit(bestT, norm(cross(vertices[bestTri->y] - vertices[bestTri->x], vertices[bestTri->z] - vertices[bestTri->x])), &material) : Hit();
+    }
+};
+
 struct Sphere
 {
     Material material;
@@ -31,19 +75,6 @@ struct Sphere
     {
         float t;
         return IntersectRaySphere(ray, position, radius, &t) ? Hit(t, (ray.origin + ray.direction * t - position) / radius, &material) : Hit();
-    }
-};
-
-struct Triangle
-{
-    Material material;
-    float3 v0,v1,v2;
-
-    bool CheckOcclusion(const Ray & ray) const { return IntersectRayTriangle(ray, v0, v1, v2); }
-    Hit Intersect(const Ray & ray) const
-    {
-        float t;
-        return IntersectRayTriangle(ray, v0, v1, v2, &t) ? Hit(t, norm(cross(v1-v0, v2-v0)), &material) : Hit();
     }
 };
 
@@ -62,14 +93,14 @@ struct Scene
     DirectionalLight dirLight;
 
     std::vector<Sphere> spheres;
-    std::vector<Triangle> triangles;
+    std::vector<Mesh> meshes;
 
     float3 ComputeLighting(const Hit & hit, const float3 & viewPosition) const;
 
     bool CheckOcclusion(const Ray & ray, const Material * ignore) const
     {
         for(auto & sphere : spheres) if(&sphere.material != ignore && sphere.CheckOcclusion(ray)) return true;
-        for(auto & triangle : triangles) if(&triangle.material != ignore && triangle.CheckOcclusion(ray)) return true;
+        for(auto & mesh : meshes) if(&mesh.material != ignore && mesh.CheckOcclusion(ray)) return true;
         return false;
     }
 
@@ -81,9 +112,9 @@ struct Scene
             auto hit = sphere.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
-        for(auto & triangle : triangles)
+        for(auto & mesh : meshes)
         {
-            auto hit = triangle.Intersect(ray);
+            auto hit = mesh.Intersect(ray);
             if(hit.distance < bestHit.distance) bestHit = hit;
         }
         bestHit.point = ray.origin + ray.direction * bestHit.distance;

@@ -57,14 +57,34 @@ int main(int argc, char * argv[]) try
     Scene scene;
     scene.skyColor = float3(0,0.5f,1.0f);
     scene.ambientLight = float3(0.3f,0.3f,0.3f);
-    scene.dirLight.direction = {0,1,0};
+    scene.dirLight.direction = norm(float3(0.2f,1,-0.1f));
     scene.dirLight.color = {0.8f,0.8f,0.5f};
     scene.spheres.push_back({Material{{1,1,1}}, {0,0,-5}, 2});
     scene.spheres.push_back({Material{{1,0.5f,0.5f}}, {3,-1,-7}, 2});
     scene.spheres.push_back({Material{{0.3f,1,0.3f}}, {-3,-2,-6}, 2});
     scene.spheres.push_back({Material{{0.4f,0.4f,1}}, {-1.5f,+2,-6}, 2});
-    scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,0}, {10,-4,-20}});
-    scene.triangles.push_back({Material{{0.5f,0.3f,0.1f}}, {-10,-4,0}, {10,-4,-20}, {-10,-4,-20}});
+
+    scene.meshes.push_back({
+        Material{{0.5f,0.3f,0.1f}},
+        {{-10,-4,0}, {10,-4,0}, {10,-4,-20}, {-10,-4,-20}},
+        {{0,1,2}, {0,2,3}}
+    });
+
+    Mesh mesh;
+    mesh.material = {{1.0f,1.0f,0}};
+    float3 offset = {4.0f,-4.0f,-4.0f};
+    for(int i=0; i<24; ++i)
+    {
+        float angle = i*6.28f/24;
+        mesh.vertices.push_back(offset + float3{cosf(angle),0.0f,sinf(angle)});
+        mesh.vertices.push_back(offset + float3{cosf(angle),5.0f,sinf(angle)});
+        mesh.triangles.push_back({i*2, i*2+1, ((i+1)*2 + 1) % 48});
+        mesh.triangles.push_back({i*2, ((i+1)*2 + 1) % 48, (i+1)*2 % 48});
+        if(i>1) mesh.triangles.push_back({1,i*2+1,(i-1)*2+1});
+    }
+    scene.meshes.push_back(mesh);
+
+    for(auto & mesh : scene.meshes) mesh.ComputeBounds();
 
     Pose viewPose;
 

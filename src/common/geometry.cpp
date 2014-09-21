@@ -8,7 +8,12 @@ bool IntersectRaySphere(const Ray & ray, const float3 & center, float radius, fl
     if(disc < 0) return false;
 
     float t = b - std::sqrt(disc);
-    if(t <= 0) return false;
+    if(t <= 0)
+    {
+        float t1 = 2*b - t;
+        if(t1 <= 0) return false;
+        t = 0;
+    }
 
     if(outT) *outT = t;
     return true;
@@ -19,7 +24,7 @@ bool IntersectRayTriangle(const Ray & ray, const float3 & vertex0, const float3 
     auto e1 = vertex1 - vertex0, e2 = vertex2 - vertex0;
     auto h = cross(ray.direction, e2);
     auto a = dot(e1, h);
-    if (a > -0.00001f && a < 0.00001f) return false;
+    if (a < 0) return false;
 
     auto f = 1/a;
     auto s = ray.origin - vertex0;

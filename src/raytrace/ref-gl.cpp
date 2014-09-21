@@ -22,6 +22,14 @@ void SetupLightingEnvironment(const Scene & scene)
     glLight(GL_LIGHT0, GL_SPECULAR, {scene.dirLight.color,1});
 }
 
+void SetupMaterial(const Material & material)
+{
+    glMaterial(GL_FRONT, GL_AMBIENT, {material.albedo,1});
+    glMaterial(GL_FRONT, GL_DIFFUSE, {material.albedo,1});
+    glMaterial(GL_FRONT, GL_SPECULAR, {material.albedo,1});
+    glMateriali(GL_FRONT, GL_SHININESS, 64);
+}
+
 void DrawReferenceSceneGL(const Scene & scene, const Pose & viewPose, float aspectRatio)
 {
     static GLUquadric * quad = gluNewQuadric();
@@ -42,31 +50,32 @@ void DrawReferenceSceneGL(const Scene & scene, const Pose & viewPose, float aspe
 
     SetupLightingEnvironment(scene);
 
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     for(auto & sphere : scene.spheres)
     {
+        SetupMaterial(sphere.material);
+
         glPushMatrix();
         glTranslatef(sphere.position.x, sphere.position.y, sphere.position.z);
-        glMaterial(GL_FRONT, GL_AMBIENT, {sphere.material.albedo,1});
-        glMaterial(GL_FRONT, GL_DIFFUSE, {sphere.material.albedo,1});
-        glMaterial(GL_FRONT, GL_SPECULAR, {sphere.material.albedo,1});
-        glMateriali(GL_FRONT, GL_SHININESS, 64);
         gluSphere(quad, sphere.radius, 24, 24);
         glPopMatrix();
     }
     
-    for(auto & triangle : scene.triangles)
+    for(auto & mesh : scene.meshes)
     {
-        glMaterial(GL_FRONT, GL_AMBIENT, {triangle.material.albedo,1});
-        glMaterial(GL_FRONT, GL_DIFFUSE, {triangle.material.albedo,1});
-        glMaterial(GL_FRONT, GL_SPECULAR, {triangle.material.albedo,1});
-        glMateriali(GL_FRONT, GL_SHININESS, 64);
+        SetupMaterial(mesh.material);
+
         glBegin(GL_TRIANGLES);
-        auto n = norm(cross(triangle.v1-triangle.v0, triangle.v2-triangle.v0));
-        glNormal3fv(&n.x);
-        glVertex3fv(&triangle.v0.x);
-        glVertex3fv(&triangle.v1.x);
-        glVertex3fv(&triangle.v2.x);
+        for(auto & tri : mesh.triangles)
+        {
+            auto & v0 = mesh.vertices[tri.x], & v1 = mesh.vertices[tri.y], & v2 = mesh.vertices[tri.z];
+            auto n = norm(cross(v1-v0, v2-v0));
+            glNormal3fv(&n.x);
+            glVertex3fv(&v0.x);
+            glVertex3fv(&v1.x);
+            glVertex3fv(&v2.x);
+        }
         glEnd();
     }
 
